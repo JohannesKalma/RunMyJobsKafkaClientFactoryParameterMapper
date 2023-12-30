@@ -60,3 +60,10 @@ or with chained methods:
   new Consumer(new JobParameterMap(jcsJob).getClientFactory().setPrintwriter(jcsOut)).printValues().seek();
 }
 ```
+
+Example of jobDefinition parameters and sourcefor a producer for which the incoming value must be serialized on an AVRO schema. 
+
+![image](https://github.com/JohannesKalma/RunMyJobsKafkaClientFactoryParameterMapper/assets/151011488/ad0ab08f-a693-45b3-96de-e40cbf403917)
+
+![image](https://github.com/JohannesKalma/RunMyJobsKafkaClientFactoryParameterMapper/assets/151011488/c85f72be-5925-46fe-85c6-81f039724a95)
+
