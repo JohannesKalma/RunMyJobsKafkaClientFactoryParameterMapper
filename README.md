@@ -6,7 +6,7 @@ Dependencies:
 
 Add ParameterMapper class to your library, with all depencies.
 
-Create a jobDefinition with any of these parameters. 
+Create a jobDefinition with any of these (case sensitive) parameters
 DTO fields that can be used for mapping:
 - bootstrapServers String (list of brokers)
 - bootstrapServersCredentials Credentials
