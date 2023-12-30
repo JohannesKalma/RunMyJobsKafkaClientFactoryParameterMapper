@@ -4,3 +4,4 @@ Dependencies:
 - [KafkaClientFactory](https://github.com/JohannesKalma/KafkaClientFactory)
 - [Redwood RunMyJobs](https://redwood.com)
 
+Add ParameterMapper class to your library, add all depencies.
