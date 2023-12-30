@@ -2,5 +2,5 @@ Map the parameters of a submitted Redwood RunMyJobs processDefinition on an inst
 
 Dependencies:
 - KafkaClientFactory (https://github.com/JohannesKalma/KafkaClientFactory)
-- Redwood RunMyJobs  ([[https://](https://www.redwood.com/)https://www.redwood.com/](redwood)
+- Redwood RunMyJobs  [https://redwood.com](redwood)
 
