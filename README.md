@@ -40,11 +40,21 @@ Content of the jobDefintionsource can be then:
 ```
 or
 ```
- /*seek a message*/
-new Consumer(new JobParameterMap(jcsJob).getClientFactory().setPrintwriter(jcsOut)).printValues().seek();
-//or
-//KafkaClientFactory cf = new JobParameterMap(jcsJob).getClientFactory().setPrintwriter(jcsOut);
-//new Consumer(cf).printValues().seek();
-// many methods are chainable.
-```
+{
+  /*seek a message*/
+  JobParameterMap pm = new JobParameterMap(jcsJob);
+  KafkaClientFactory cf = pm.getClientFactory();
+  cf.setPrintwriter(jcsOut)
 
+  Consumer c = new Consumer();
+  c.printValues();
+  c.seek();
+}
+```
+or with chained methods:
+```
+{
+  /*seek a message*/
+  new Consumer(new JobParameterMap(jcsJob).getClientFactory().setPrintwriter(jcsOut)).printValues().seek();
+}
+```
