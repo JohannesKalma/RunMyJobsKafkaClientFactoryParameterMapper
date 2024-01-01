@@ -2,8 +2,6 @@ package org.aswatson.rmj.kafka;
 
 import com.redwood.scheduler.api.model.BusinessKeyLookup;
 import com.redwood.scheduler.api.model.Credential;
-import com.redwood.scheduler.api.model.Database;
-import com.redwood.scheduler.api.model.Document;
 import com.redwood.scheduler.api.model.Job;
 import com.redwood.scheduler.api.model.JobParameter;
 import com.redwood.scheduler.api.model.Partition;
@@ -12,6 +10,7 @@ import com.redwood.scheduler.api.model.Table;
 import com.redwood.scheduler.api.model.TableValue;
 import com.redwood.scheduler.api.model.enumeration.SimpleConstraintType;
 import com.redwood.scheduler.api.scripting.variables.ScriptSessionFactory;
+
 import java.util.HashMap;
 
 import org.asw.kafkafactory.Credentials;
@@ -25,16 +24,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * JobParameter reads all job parameters and serializes them on an instance of
  * the KafkaClientFactory<br>
  * 
- * dependencies:
- * RunMyJobs
- * Jackson-databind
- * 
- * 
+ * dependencies:<br>
+ * - RunMyJobs<br>
+ * - Jackson-databind<br>
+ * - KafkaClientFactory<br>
  * 
  * @author JKALMA
  */
 public class JobParameterMap {
 
+	SchedulerSession localSession;
+	
 	private KafkaClientFactory clientFactory;
 
 	/**
@@ -47,17 +47,20 @@ public class JobParameterMap {
 	}
 
 	/**
-	 * Instantiate class with Job. Job parameters are mapped on an instance of the
-	 * KafkaClientFactory. that can be retrieved with the getClentFactory()
+	 * <p>Instantiate class with Job. Job parameters are mapped on an instance of the
+	 * KafkaClientFactory. that can be retrieved with the getClentFactory()</p>
 	 * 
-	 * ProcessDefintion All arameters must be of Type String. ParameterValues that
-	 * need to be evaluated from the GLOBAL.KAFKA_CONFIG table, should be configure
-	 * accordingly (Simple Constraint Type Table, wit Constraint Data KAFKA_CONFIG)
+	 * <p>ProcessDefintion usage:<br> 
+	 * All parameters must be any of type String.<br>
+	 * - Bare values do not need a constraint.<br> 
+	 * - ParameterValues can be evaluated from a Table Simple constraint. Table should be configured with Key and Value<br>
+	 * - ParameterValues can be evaluated from a QueryFilters: Document, Credential, Database.</p>
 	 * 
 	 * @param j Job - the Job Object.
 	 * @throws Exception generic exception
 	 */
 	public JobParameterMap(Job j) throws Exception {
+		this.localSession = ScriptSessionFactory.getSession();
 		HashMap<String, Object> parameterValuesMap = new HashMap<String, Object>();
 
 		for (JobParameter jp : j.getJobParameters()) {
@@ -65,8 +68,7 @@ public class JobParameterMap {
 			Object object = jp.getCurrentValueString();
 			
 			if (jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.Table))) {
-				// String tableName = jp.getJobDefinitionParameter().getSimpleConstraintData();
-				String tableValue = getTableValue(jp.getCurrentValueString());
+				String tableValue = getTableValue(jp.getJobDefinitionParameter().getSimpleConstraintData(),jp.getCurrentValueString());				
 				switch (tableValue.split(":")[0]) {
 				case "Document":
 					object = this.getDocumentData(tableValue);
@@ -84,14 +86,14 @@ public class JobParameterMap {
 
 			if (jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.QueryFilter))) {
 				switch (jp.getJobDefinitionParameter().getSimpleConstraintData()) {
-				case "QueryFilter:User.Redwood System.Database.Database%2e;all":
-					object = this.getJdbcUrl(jp.getCurrentValueString());
+				case "QueryFilter:User.Redwood System.Credential.Document%2e;all":
+					object = this.getDocumentData(jp.getCurrentValueString());
 					break;
 				case "QueryFilter:User.Redwood System.Credential.Credential%2e;all":
 					object = this.getCredentials(jp.getCurrentValueString());
 					break;
-				case "QueryFilter:User.Redwood System.Credential.Document%2e;all":
-					object = this.getDocumentData(jp.getCurrentValueString());
+				case "QueryFilter:User.Redwood System.Database.Database%2e;all":
+					object = this.getJdbcUrl(jp.getCurrentValueString());
 					break;
 				default:
 					//
@@ -106,30 +108,32 @@ public class JobParameterMap {
 		clientFactory = objectMapper.convertValue(parameterValuesMap, KafkaClientFactory.class);
 	}
 
-	private String getTableValue(String searchKey) {
-		SchedulerSession localSession = ScriptSessionFactory.getSession();
-		Partition p = localSession.getPartitionByName("GLOBAL");
-		Table t = p.getTableByName("KAFKA_CONFIG");
-		TableValue tv = t.getTableValueBySearchKeySearchColumnName(searchKey, "Value");
+	private String getTableValue(String tb, String searchKey) {
+		Partition p = localSession.getDefaultPartition();
+		String t = tb;
+		String[] ts = t.split("\\.");
+		
+	  if (ts.length == 2) {	
+	  	p=localSession.getPartitionByName(ts[0]);
+	  	t = ts[1];
+	  }
+	  
+	  Table table = localSession.getTableByName(p, t);
+		TableValue tv = table.getTableValueBySearchKeySearchColumnName(searchKey, "Value");
 		return tv.getColumnValue();
 	}
 
 	private String getDocumentData(String key) {
-		SchedulerSession localSession = ScriptSessionFactory.getSession();
-		Document document = BusinessKeyLookup.getDocumentByBusinessKey(localSession, key);
-		return document.getDataAsString();
+		return BusinessKeyLookup.getDocumentByBusinessKey(localSession, key).getDataAsString();
 	}
 
 	private Credentials getCredentials(String key) throws Exception {
-		SchedulerSession localSession = ScriptSessionFactory.getSession();
 		Credential credential = BusinessKeyLookup.getCredentialByBusinessKey(localSession, key);
 		return new Credentials(credential.getRealUser(), localSession.unprotectPassword(credential.getProtectedPassword()));
 	}
 
 	private String getJdbcUrl(String key) {
-		SchedulerSession localSession = ScriptSessionFactory.getSession();
-		Database database = BusinessKeyLookup.getDatabaseByBusinessKey(localSession, key);
-		return database.getJdbcUrl();
+		return BusinessKeyLookup.getDatabaseByBusinessKey(localSession, key).getJdbcUrl();
 	}
 
 }
