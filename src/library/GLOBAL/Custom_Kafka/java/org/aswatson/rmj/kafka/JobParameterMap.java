@@ -34,7 +34,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 public class JobParameterMap {
 
 	SchedulerSession localSession;
-	
+
 	private KafkaClientFactory clientFactory;
 
 	/**
@@ -47,14 +47,20 @@ public class JobParameterMap {
 	}
 
 	/**
-	 * <p>Instantiate class with Job. Job parameters are mapped on an instance of the
-	 * KafkaClientFactory. that can be retrieved with the getClentFactory()</p>
+	 * <p>
+	 * Instantiate class with Job. Job parameters are mapped on an instance of the
+	 * KafkaClientFactory. that can be retrieved with the getClentFactory()
+	 * </p>
 	 * 
-	 * <p>ProcessDefintion usage:<br> 
+	 * <p>
+	 * ProcessDefintion usage:<br>
 	 * All parameters must be any of type String.<br>
-	 * - Bare values do not need a constraint.<br> 
-	 * - ParameterValues can be evaluated from a Table Simple constraint. Table should be configured with Key and Value<br>
-	 * - ParameterValues can be evaluated from a QueryFilters: Document, Credential, Database.</p>
+	 * - Bare values do not need a constraint.<br>
+	 * - ParameterValues can be evaluated from a Table Simple constraint. Table
+	 * should be configured with Key and Value<br>
+	 * - ParameterValues can be evaluated from a QueryFilters: Document, Credential,
+	 * Database.
+	 * </p>
 	 * 
 	 * @param j Job - the Job Object.
 	 * @throws Exception generic exception
@@ -64,11 +70,12 @@ public class JobParameterMap {
 		HashMap<String, Object> parameterValuesMap = new HashMap<String, Object>();
 
 		for (JobParameter jp : j.getJobParameters()) {
-			
+
 			Object object = jp.getCurrentValueString();
-			
+
 			if (jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.Table))) {
-				String tableValue = getTableValue(jp.getJobDefinitionParameter().getSimpleConstraintData(),jp.getCurrentValueString());				
+				String tableValue = getTableValue(jp.getJobDefinitionParameter().getSimpleConstraintData(),
+						jp.getCurrentValueString());
 				switch (tableValue.split(":")[0]) {
 				case "Document":
 					object = this.getDocumentData(tableValue);
@@ -99,10 +106,10 @@ public class JobParameterMap {
 					//
 				}
 			}
-			
+
 			parameterValuesMap.put(jp.getJobDefinitionParameter().getName(), object);
 		}
-		
+
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		clientFactory = objectMapper.convertValue(parameterValuesMap, KafkaClientFactory.class);
@@ -112,13 +119,13 @@ public class JobParameterMap {
 		Partition p = localSession.getDefaultPartition();
 		String t = tb;
 		String[] ts = t.split("\\.");
-		
-	  if (ts.length == 2) {	
-	  	p=localSession.getPartitionByName(ts[0]);
-	  	t = ts[1];
-	  }
-	  
-	  Table table = localSession.getTableByName(p, t);
+
+		if (ts.length == 2) {
+			p = localSession.getPartitionByName(ts[0]);
+			t = ts[1];
+		}
+
+		Table table = localSession.getTableByName(p, t);
 		TableValue tv = table.getTableValueBySearchKeySearchColumnName(searchKey, "Value");
 		return tv.getColumnValue();
 	}
