@@ -55,11 +55,13 @@ public class JobParameterMap {
 	 * <p>
 	 * ProcessDefintion usage:<br>
 	 * All parameters must be any of type String.<br>
-	 * - Bare values do not need a constraint.<br>
-	 * - ParameterValues can be evaluated from a Table Simple constraint. Table
-	 * should be configured with Key and Value<br>
-	 * - ParameterValues can be evaluated from a QueryFilters: Document, Credential,
-	 * Database.
+	 * <li> Bare values do not need a constraint.</li>
+	 * <li> ParameterValues can be evaluated from a Table Simple constraint. Table should be configured with Key and Value<br>
+	 *   <ul><li>Table can contain a bare value or a RMJ object as Businesskey String (Starting with "Document","Credential" or "Database")</li></ul>
+	 * </li>  
+	 *  
+	 * <li>ParameterValues can be evaluated from a QueryFilters: Document, Credential,
+	 * Database.</li>
 	 * </p>
 	 * 
 	 * @param j Job - the Job Object.
