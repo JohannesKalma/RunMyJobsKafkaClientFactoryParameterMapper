@@ -95,7 +95,7 @@ public class JobParameterMap {
 
 			if (jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.QueryFilter))) {
 				switch (jp.getJobDefinitionParameter().getSimpleConstraintData()) {
-				case "QueryFilter:User.Redwood System.Credential.Document%2e;all":
+				case "QueryFilter:User.Redwood System.Document.Document%2e;all":
 					object = this.getDocumentData(jp.getCurrentValueString());
 					break;
 				case "QueryFilter:User.Redwood System.Credential.Credential%2e;all":
