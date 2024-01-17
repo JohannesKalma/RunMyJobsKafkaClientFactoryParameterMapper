@@ -11,6 +11,7 @@ import com.redwood.scheduler.api.model.TableValue;
 import com.redwood.scheduler.api.model.enumeration.SimpleConstraintType;
 import com.redwood.scheduler.api.scripting.variables.ScriptSessionFactory;
 
+import java.util.Arrays;
 import java.util.HashMap;
 
 import org.asw.kafkafactory.Credentials;
@@ -59,9 +60,8 @@ public class JobParameterMap {
 	 * <li> ParameterValues can be evaluated from a Table Simple constraint. Table should be configured with Key and Value<br>
 	 *   <ul><li>Table can contain a bare value or a RMJ object as Businesskey String (Starting with "Document","Credential" or "Database")</li></ul>
 	 * </li>  
-	 *  
-	 * <li>ParameterValues can be evaluated from a QueryFilters: Document, Credential,
-	 * Database.</li>
+	 * <li>ParameterValues can be evaluated from a QueryFilters: Document, Credential, Database.</li>
+	 * <li>Credentials parameters "bootstrapServersCredentials", "schemaRegistryCredentials", "jdbcCredentials", when not Table or Query based, must have json string format {"userName":"[name]","password":"[password]"} </li> 
 	 * </p>
 	 * 
 	 * @param j Job - the Job Object.
@@ -108,7 +108,14 @@ public class JobParameterMap {
 					//
 				}
 			}
-
+			
+			String[] credentialParametersArray = {"bootstrapServersCredentials", "schemaRegistryCredentials", "jdbcCredentials"};
+			boolean isCredentialParameter = Arrays.stream(credentialParametersArray).anyMatch(s -> s.equals(jp.getJobDefinitionParameter().getName()));
+      if (isCredentialParameter && !(jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.QueryFilter)) || jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.Table)))) {
+      	ObjectMapper objectMapper = new ObjectMapper();
+    		object = objectMapper.readValue(jp.getCurrentValueString(), Credentials.class);
+      }
+			
 			parameterValuesMap.put(jp.getJobDefinitionParameter().getName(), object);
 		}
 
