@@ -53,16 +53,17 @@ public class JobParameterMap {
 	 * KafkaClientFactory. that can be retrieved with the getClentFactory()
 	 * </p>
 	 * 
-	 * <p>
 	 * ProcessDefintion usage:<br>
 	 * All parameters must be any of type String.<br>
+	 * <ul>
 	 * <li> Bare values do not need a constraint.</li>
 	 * <li> ParameterValues can be evaluated from a Table Simple constraint. Table should be configured with Key and Value<br>
 	 *   <ul><li>Table can contain a bare value or a RMJ object as Businesskey String (Starting with "Document","Credential" or "Database")</li></ul>
 	 * </li>  
 	 * <li>ParameterValues can be evaluated from a QueryFilters: Document, Credential, Database.</li>
 	 * <li>Credentials parameters "bootstrapServersCredentials", "schemaRegistryCredentials", "jdbcCredentials", when not Table or Query based, must have json string format {"userName":"[name]","password":"[password]"} </li> 
-	 * </p>
+	 * </ul>
+	 * 
 	 * 
 	 * @param j Job - the Job Object.
 	 * @throws Exception generic exception
