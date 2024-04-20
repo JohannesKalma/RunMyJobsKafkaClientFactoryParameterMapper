@@ -9,6 +9,7 @@ import com.redwood.scheduler.api.model.SchedulerSession;
 import com.redwood.scheduler.api.model.Table;
 import com.redwood.scheduler.api.model.TableValue;
 import com.redwood.scheduler.api.model.enumeration.SimpleConstraintType;
+import com.redwood.scheduler.api.model.interfaces.RWIterable;
 import com.redwood.scheduler.api.scripting.variables.ScriptSessionFactory;
 
 import java.util.Arrays;
@@ -16,6 +17,7 @@ import java.util.HashMap;
 
 import org.asw.kafkafactory.Credentials;
 import org.asw.kafkafactory.KafkaClientFactory;
+import org.asw.kafkafactory.KafkaUtil;
 
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -37,7 +39,7 @@ public class JobParameterMap {
 	SchedulerSession localSession;
 
 	private KafkaClientFactory clientFactory;
-
+	
 	/**
 	 * return an instance of KafkaClientFactory class
 	 * 
@@ -77,20 +79,72 @@ public class JobParameterMap {
 			Object object = jp.getCurrentValueString();
 
 			if (jp.getJobDefinitionParameter().getSimpleConstraintType().equals((SimpleConstraintType.Table))) {
-				String tableValue = getTableValue(jp.getJobDefinitionParameter().getSimpleConstraintData(),
-						jp.getCurrentValueString());
-				switch (tableValue.split(":")[0]) {
-				case "Document":
-					object = this.getDocumentData(tableValue);
+				switch (jp.getJobDefinitionParameter().getName()) {
+				case "bootstrapConf":
+					for (TableValue tv: this.getBootstrapServerConfigTableValues(jp.getJobDefinitionParameter().getSimpleConstraintData(), jp.getCurrentValueString())) {
+						switch (tv.getColumnName()) {
+						case "bootstrapServers":
+							parameterValuesMap.put(tv.getColumnName(), tv.getColumnValue());
+							break;
+						case "bootstrapServerTruststoreCertificate":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), this.getDocumentData(tv.getColumnValue()));
+							}
+							break;
+						case "bootstrapServersCredentials":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), this.getCredentials(tv.getColumnValue()));
+							}
+							break;
+						case "schemaRegistryURL":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), tv.getColumnValue());
+							}
+							break;
+						case "schemaRegistryCredentials":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), this.getCredentials(tv.getColumnValue()));
+							}
+							break;
+						default:
+							//
+						}					  	
+					}
 					break;
-				case "Credential":
-					object = this.getCredentials(tableValue);
-					break;
-				case "Database":
-					object = this.getJdbcUrl(tableValue);
-					break;
+				case "jdbcConf":
+					for (TableValue tv: this.getBootstrapServerConfigTableValues(jp.getJobDefinitionParameter().getSimpleConstraintData(), jp.getCurrentValueString())) {
+						switch (tv.getColumnName()) {
+						case "jdbcUrl":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), tv.getColumnValue());
+							}
+						break;
+						case "jdbcCredentials":
+							if (KafkaUtil.isNotBlank(tv.getColumnValue())) {
+							  parameterValuesMap.put(tv.getColumnName(), this.getCredentials(tv.getColumnValue()));
+							}
+							break;
+						default:
+							//
+						}
+					}
+				  break;
 				default:
-					object = tableValue;
+					String tableValue = getTableValue(jp.getJobDefinitionParameter().getSimpleConstraintData(),
+							jp.getCurrentValueString());
+					switch (tableValue.split(":")[0]) {
+					case "Document":
+						object = this.getDocumentData(tableValue);
+						break;
+					case "Credential":
+						object = this.getCredentials(tableValue);
+						break;
+					case "Database":
+						object = this.getJdbcUrl(tableValue);
+						break;
+					default:
+						object = tableValue;
+					}
 				}
 			}
 
@@ -116,16 +170,16 @@ public class JobParameterMap {
       	ObjectMapper objectMapper = new ObjectMapper();
     		object = objectMapper.readValue(jp.getCurrentValueString(), Credentials.class);
       }
-			
-			parameterValuesMap.put(jp.getJobDefinitionParameter().getName(), object);
+
+      parameterValuesMap.put(jp.getJobDefinitionParameter().getName(), object);
 		}
 
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		clientFactory = objectMapper.convertValue(parameterValuesMap, KafkaClientFactory.class);
 	}
-
-	private String getTableValue(String tb, String searchKey) {
+	
+	private Table getTable(String tb) {
 		Partition p = localSession.getDefaultPartition();
 		String t = tb;
 		String[] ts = t.split("\\.");
@@ -135,7 +189,26 @@ public class JobParameterMap {
 			t = ts[1];
 		}
 
-		Table table = localSession.getTableByName(p, t);
+		return localSession.getTableByName(p, t);		
+	}
+	
+	private RWIterable<TableValue> getBootstrapServerConfigTableValues(String table, String key) {
+		Table t = this.getTable(table);
+	  return t.getTableRowByKey(key);
+	}
+	
+	private String getTableValue(String tb, String searchKey) {
+		/*
+		Partition p = localSession.getDefaultPartition();
+		String t = tb;
+		String[] ts = t.split("\\.");
+
+		if (ts.length == 2) {
+			p = localSession.getPartitionByName(ts[0]);
+			t = ts[1];
+		}
+    */
+		Table table = this.getTable(tb);
 		TableValue tv = table.getTableValueBySearchKeySearchColumnName(searchKey, "Value");
 		return tv.getColumnValue();
 	}
