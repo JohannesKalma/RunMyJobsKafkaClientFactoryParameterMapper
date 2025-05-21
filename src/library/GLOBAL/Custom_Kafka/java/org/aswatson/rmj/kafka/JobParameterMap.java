@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * - Jackson-databind<br>
  * - KafkaClientFactory<br>
  * 
+ * Demo voor Jerone
  * @author JKALMA
  */
 public class JobParameterMap {
